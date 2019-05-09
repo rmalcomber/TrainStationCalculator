@@ -1,0 +1,7 @@
+<div class="select is-large">
+  <select [disabled]="disabled" (change)="onChange($event.target.value)"
+    [(ngModel)]="selectedItem">
+    <option>{{defaultMenuSelection}}</option>
+    <option *ngFor="let station of items">{{station}}</option>
+  </select>
+</div>
