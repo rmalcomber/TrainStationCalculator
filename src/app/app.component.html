@@ -12,6 +12,14 @@
               </div>
             </div>
           </div>
+          <div class="column" *ngIf="selectedIntermediateStation">
+            <div class="field has-text-centered">
+              <label class="label">Intermediate Station</label>
+              <div class="control has-text-centered">
+                <input class="input is-large has-text-centered" type="text" [(ngModel)]="selectedIntermediateStation" disabled />
+              </div>
+            </div>
+          </div>
           <div class="column">
             <div class="field has-text-centered">
               <label class="label">Destination Station</label>
@@ -22,6 +30,7 @@
             </div>
 
           </div>
+
         </div>
         <div class="columns" *ngIf="duration">
           <div class="column has-text-centered">

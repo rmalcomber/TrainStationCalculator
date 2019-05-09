@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { JsonDataProviderService } from './providers/data-provider.service';
 import { DefaultMenuSelection } from './consts';
+import { Destination } from './providers/dtos/destination.dto';
 
 @Component({
   selector: 'app-root',
@@ -14,6 +15,7 @@ export class AppComponent implements OnInit {
   public duration: number;
   public selectedStartStation = DefaultMenuSelection;
   public selectedEndStation = DefaultMenuSelection;
+  public selectedIntermediateStation = '';
 
   constructor(private dataProvider: JsonDataProviderService) { }
 
@@ -32,14 +34,12 @@ export class AppComponent implements OnInit {
     this.UpdateEndList(newValue);
   }
 
-  public finalDestinationChanged(newValue: string) {
+  public finalDestinationChanged(newValue: string): void {
     this.selectedEndStation = newValue;
     this.UpdateDuration();
   }
 
-  private UpdateEndList(station: string) {
-    const filterDestinations = this.filterDestinations(station);
-    this.endStations = filterDestinations;
+  private UpdateEndList(station: string): void {
 
     this.CheckAndResetEndList();
 
@@ -47,8 +47,9 @@ export class AppComponent implements OnInit {
   }
 
   private CheckAndResetEndList(): void {
-    if (this.endStations.indexOf(this.selectedEndStation) < 0) {
+    if (this.selectedStartStation === this.selectedEndStation) {
       this.selectedEndStation = DefaultMenuSelection;
+      this.ResetItermediateStation();
     }
   }
 
@@ -65,19 +66,55 @@ export class AppComponent implements OnInit {
     this.duration = duration;
   }
 
-  private GetDuration(startStation: string, EndStation: string): number {
-    const selectedDataObject = this.dataProvider.GetData().find((station) => {
-      return station.DepartFrom === startStation && station.ArriveAt === EndStation;
-    });
-    return (selectedDataObject ? selectedDataObject.Time : null);
+  private GetDuration(startStation: string, endStation: string): number {
+    const selectedDataObject = this.GetDestinationObject(startStation, endStation);
+
+    if (!selectedDataObject) {
+      return this.GetDurationWithIntemediateStation(startStation, endStation);
+    } else {
+      this.ResetItermediateStation();
+      return (selectedDataObject ? selectedDataObject.Time : null);
+    }
+
   }
 
-  private filterDestinations(startStation: string): string[] {
+  private GetDurationWithIntemediateStation(startStation: string, endStation: string) {
+    const interMediateStations = this.GetIntermediateStations(startStation, endStation);
+    if (!interMediateStations) { return null; }
 
-    const stations = this.dataProvider.GetData().filter(station => {
-      return (station.DepartFrom === startStation);
+    const intermediateStation = interMediateStations[0];
+    const finalDestinationStation = this.GetDestinationObject(intermediateStation.ArriveAt, endStation);
+
+
+    this.selectedIntermediateStation = intermediateStation.ArriveAt;
+    return (interMediateStations[0].Time + finalDestinationStation.Time);
+  }
+
+  private ResetItermediateStation(): void {
+    this.selectedIntermediateStation = '';
+  }
+
+  private GetDestinationObject(startStation: string, endStation: string): Destination {
+    return this.dataProvider.GetData().find((station) => {
+      return station.DepartFrom === startStation && station.ArriveAt === endStation;
     });
-    return stations.map(station => station.ArriveAt);
+  }
+
+  private GetIntermediateStations(startStation: string, endStation: string): Destination[] {
+    const selectedDataObject = this.dataProvider.GetData();
+
+    const allEndStation = selectedDataObject.filter((station) => station.ArriveAt === endStation);
+
+    let interMediateStations: Destination[] = [];
+
+    allEndStation.forEach((station) => {
+      const possibleStations = selectedDataObject.filter((posStation) => {
+        return posStation.ArriveAt === station.DepartFrom && posStation.DepartFrom === startStation;
+      });
+      interMediateStations = interMediateStations.concat(possibleStations);
+    });
+
+    return interMediateStations;
 
   }
 
